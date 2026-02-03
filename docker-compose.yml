@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  quarkflow:
+    build: .
+    container_name: quarkflow
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
+    environment:
+      # Optional: Use proxy for Quark access if needed
+      # - HTTP_PROXY=http://172.17.0.1:7890
+      # - HTTPS_PROXY=http://172.17.0.1:7890
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
