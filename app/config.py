@@ -20,8 +20,6 @@ TG_SESSION_NAME = os.getenv("TG_SESSION", "quarkflow")
 
 # Quark configuration
 QUARK_COOKIE = os.getenv("QUARK_COOKIE", "")
-BX_UA = os.getenv("BX_UA", "")
-BX_UMIDTOKEN = os.getenv("BX_UMIDTOKEN", "")
 
 # Database
 DB_PATH = DATA_DIR / "quarkflow.db"

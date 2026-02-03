@@ -56,7 +56,9 @@ QuarkClient
 4. 刷新页面，找到任意请求
 5. 复制请求头中的完整 Cookie
 
-**关键 Cookie 字段**：`__puus`, `b-user-id`
+**关键 Cookie 字段**：
+- 必需：`__puus`, `b-user-id`
+- 推荐：`kps`, `sign`, `vcode`（用于移动端 API，自动检测）
 
 ### 4. 配置环境变量
 
@@ -74,11 +76,8 @@ TG_CHANNEL=@D_wusun
 TG_SESSION=quarkflow
 
 # 夸克网盘配置
+# Cookie 应包含：__puus, b-user-id（推荐：kps, sign, vcode）
 QUARK_COOKIE="your_complete_cookie_here"
-
-# 反爬虫 Headers（从浏览器抓包获取）
-BX_UA="your_bx_ua_token"
-BX_UMIDTOKEN="your_bx_umidtoken"
 
 # Worker 配置
 WORKER_POLL_INTERVAL=10
@@ -104,6 +103,14 @@ docker logs -f quarkflow
 4. 登录成功后自动开始监听
 
 ## 📖 使用说明
+
+### API 策略
+
+QuarkFlow 会自动选择最优 API：
+- **移动端 API**（优先）：当 Cookie 包含 `kps`, `sign`, `vcode` 时
+- **PC 端 API**（回退）：当缺少移动端参数时
+
+无需手动配置 bx-ua/bx-umidtoken，系统会自动适配。
 
 ### 自动化流程
 
@@ -156,19 +163,12 @@ docker logs -f quarkflow
 
 使用 "Get cookies.txt LOCALLY" 等浏览器扩展导出 Cookie。
 
-### 反爬虫 Headers
-
-**bx-ua 和 bx-umidtoken** 获取：
-
-1. 在开发者工具的 Network 标签中
-2. 找到 `drive-h.quark.cn` 的请求
-3. 复制请求头中的 `bx-ua` 和 `bx-umidtoken` 值
-
-**示例**：
+**推荐 Cookie 格式**（包含移动端参数）：
 ```
-bx-ua: 231!E2p3JkmU8u3+jj+...
-bx-umidtoken: T2gAHUGDwNFBIpzaWoIXawDRQ...
+__puus=xxx; b-user-id=yyy; kps=zzz; sign=www; vcode=vvv; ...
 ```
+
+如果 Cookie 中包含 `kps`, `sign`, `vcode`，系统会自动使用移动端 API，速度更快且无需额外配置。
 
 ### 资源限制
 
@@ -329,7 +329,7 @@ ssh user@your-vps
 cd QuarkFlow
 vim .env
 
-# 3. 更新 QUARK_COOKIE, BX_UA, BX_UMIDTOKEN
+# 3. 更新 QUARK_COOKIE
 
 # 4. 重启容器
 docker compose restart
@@ -392,14 +392,18 @@ logging:
 3. **使用强密码** - Telegram 账号开启两步验证
 4. **限制容器权限** - 使用非 root 用户运行（可选）
 
-## 🤝 与其他项目对比
+## 📝 更新日志
 
-| 特性 | QuarkFlow | quark-auto-save |
-|------|-----------|-----------------|
-| 触发方式 | 实时监听 Telegram | 定时任务 |
-| 功能范围 | 专注转存 | 签到/转存/重命名/推送 |
-| 部署复杂度 | 简单（Docker） | WebUI 配置 |
-| 适用场景 | Telegram 频道自动归档 | 夸克网盘全能管理 |
+### v1.1 (最新)
+- ✅ 切换到移动端 API（无需 bx-ua/bx-umidtoken）
+- ✅ 自动检测 Cookie 中的移动端参数
+- ✅ PC 端 API 作为回退方案
+
+### v1.0
+- 初始版本
+- Telegram 实时监听
+- Cookie 过期自动通知
+- WebUI 配置界面
 
 ## 📝 待办事项
 

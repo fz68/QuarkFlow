@@ -10,11 +10,9 @@ logger = logging.getLogger(__name__)
 
 class QuarkWorker:
     def __init__(self):
-        from app.config import BX_UA, BX_UMIDTOKEN
-
         self.semaphore = asyncio.Semaphore(WORKER_CONCURRENT_TASKS)
         self.running = False
-        self.quark_client = QuarkClient(bx_ua=BX_UA, bx_umidtoken=BX_UMIDTOKEN)
+        self.quark_client = QuarkClient()
         self.notifier = TelegramNotifier()
         self.cookie_expired_notified = False
 

@@ -29,8 +29,6 @@ def update_cookie():
     data = request.json
 
     cookie = data.get("cookie", "").strip()
-    bx_ua = data.get("bx_ua", "").strip()
-    bx_umidtoken = data.get("bx_umidtoken", "").strip()
 
     if not cookie:
         return jsonify({"success": False, "error": "Cookie is required"}), 400
@@ -39,8 +37,6 @@ def update_cookie():
         update_env_file(
             {
                 "QUARK_COOKIE": f'"{cookie}"',
-                "BX_UA": f'"{bx_ua}"',
-                "BX_UMIDTOKEN": f'"{bx_umidtoken}"',
             }
         )
 
@@ -60,13 +56,11 @@ def update_cookie():
 
 @app.route("/api/status")
 def status():
-    from app.config import QUARK_COOKIE, BX_UA, BX_UMIDTOKEN
+    from app.config import QUARK_COOKIE
 
     return jsonify(
         {
             "quark_configured": bool(QUARK_COOKIE),
-            "bx_ua_configured": bool(BX_UA),
-            "bx_umidtoken_configured": bool(BX_UMIDTOKEN),
         }
     )
 

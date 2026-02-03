@@ -215,8 +215,6 @@
                 </ol>
                 <ul style="margin-left: 40px; margin-top: 8px;">
                     <li><code>Cookie:</code> 的完整值</li>
-                    <li><code>bx-ua:</code> 的值</li>
-                    <li><code>bx-umidtoken:</code> 的值</li>
                 </ul>
             </div>
         </div>
@@ -227,17 +225,10 @@
             <div class="step-content">
                 <div class="form-group">
                     <label class="form-label">Cookie（必填）</label>
-                    <input type="text" class="form-input" id="cookie" placeholder="__puus=xxx; b-user-id=yyy; ...">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">BX-UA（必填）</label>
-                    <input type="text" class="form-input" id="bx-ua" placeholder="231!E2p3JkmU...">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">BX-UMIDToken（必填）</label>
-                    <input type="text" class="form-input" id="bx-umidtoken" placeholder="T2gAHUGDw...">
+                    <input type="text" class="form-input" id="cookie" placeholder="__puus=xxx; b-user-id=yyy; kps=zzz; sign=www; vcode=vvv">
+                    <small style="color: #6b7280; margin-top: 4px; display: block;">
+                        Cookie 中应包含：__puus, b-user-id（可选：kps, sign, vcode 用于移动端 API）
+                    </small>
                 </div>
 
                 <div class="alert" id="alert"></div>
@@ -252,13 +243,11 @@
     <script>
         function saveConfig() {
             const cookie = document.getElementById('cookie').value.trim();
-            const bxUa = document.getElementById('bx-ua').value.trim();
-            const bxUmidtoken = document.getElementById('bx-umidtoken').value.trim();
             const btn = document.getElementById('save-btn');
             const alert = document.getElementById('alert');
 
-            if (!cookie || !bxUa || !bxUmidtoken) {
-                showAlert('请填写所有必填字段', 'error');
+            if (!cookie) {
+                showAlert('请填写 Cookie', 'error');
                 return;
             }
 
@@ -271,9 +260,7 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    cookie: cookie,
-                    bx_ua: bxUa,
-                    bx_umidtoken: bxUmidtoken
+                    cookie: cookie
                 })
             })
             .then(r => r.json())

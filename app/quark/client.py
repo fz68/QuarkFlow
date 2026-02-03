@@ -1,4 +1,4 @@
-"""Quark cloud drive client for saving shared links."""
+"""Quark cloud drive client for saving shared links (Mobile API)."""
 
 import httpx
 import logging
@@ -11,22 +11,51 @@ logger = logging.getLogger(__name__)
 
 
 class QuarkClient:
-    def __init__(self, bx_ua: str = "", bx_umidtoken: str = ""):
+    def __init__(self):
         self.cookie = QUARK_COOKIE
-        self.base_url = "https://drive-h.quark.cn"
+        self.base_url_pc = "https://drive-h.quark.cn"
+        self.base_url_app = "https://drive-m.quark.cn"
         self.share_url = "https://pan.quark.cn"
+
+        # Extract mparam from cookie (kps, sign, vcode)
+        self.mparam = self._extract_mparam_from_cookie()
+
         self.headers = {
             "Content-Type": "application/json",
             "Origin": "https://pan.quark.cn",
             "Referer": "https://pan.quark.cn/",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:147.0) Gecko/20100101 Firefox/147.0",
             "Cookie": self.cookie,
-            "bx-ua": bx_ua,
-            "bx-umidtoken": bx_umidtoken,
-            "bx_et": "default_not_fun",
         }
 
+    def _extract_mparam_from_cookie(self) -> dict:
+        """Extract kps, sign, vcode from Quark cookie."""
+        mparam = {}
+
+        # Try to extract kps, sign, vcode from cookie
+        kps_match = re.search(r"(?<!\w)kps=([a-zA-Z0-9%+/=]+)[;&]?", self.cookie)
+        sign_match = re.search(r"(?<!\w)sign=([a-zA-Z0-9%+/=]+)[;&]?", self.cookie)
+        vcode_match = re.search(r"(?<!\w)vcode=([a-zA-Z0-9%+/=]+)[;&]?", self.cookie)
+
+        if kps_match and sign_match and vcode_match:
+            mparam = {
+                "kps": kps_match.group(1).replace("%25", "%"),
+                "sign": sign_match.group(1).replace("%25", "%"),
+                "vcode": vcode_match.group(1).replace("%25", "%"),
+            }
+            logger.info("[QUARK] Extracted mparam from cookie")
+        else:
+            logger.warning("[QUARK] No mparam found in cookie, will use PC API")
+
+        return mparam
+
     async def get_stoken(self, share_id: str) -> str:
+        # Use mobile API if mparam is available, otherwise use PC API
+        if self.mparam:
+            base_url = self.base_url_app
+        else:
+            base_url = self.base_url_pc
+
         endpoint = "/1/clouddrive/share/sharepage/token"
 
         params = {
@@ -37,13 +66,26 @@ class QuarkClient:
             "__t": str(int(__import__("time").time() * 1000)),
         }
 
+        # Add mobile-specific parameters if using mobile API
+        if self.mparam:
+            params.update(
+                {
+                    "kps": self.mparam.get("kps"),
+                    "sign": self.mparam.get("sign"),
+                    "vcode": self.mparam.get("vcode"),
+                    "device_model": "M2011K2C",
+                    "fr": "android",
+                    "pf": "3300",
+                }
+            )
+
         payload = {
             "pwd_id": share_id,
             "passcode": "",
             "support_visit_limit_private_share": "true",
         }
 
-        url = f"{self.base_url}{endpoint}"
+        url = f"{base_url}{endpoint}"
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -66,12 +108,6 @@ class QuarkClient:
             logger.error(f"[QUARK] exception getting stoken: {str(e)}")
             return ""
 
-        except Exception as e:
-            logger.error(
-                f"[QUARK] failed to get stoken for share_id={share_id}: {str(e)}"
-            )
-            return ""
-
     async def save_share(self, share_id: str, to_pdir_fid: str = "0") -> dict:
         stoken = await self.get_stoken(share_id)
 
@@ -82,9 +118,28 @@ class QuarkClient:
                 "share_id": share_id,
             }
 
+        # Use mobile API if mparam is available, otherwise use PC API
+        if self.mparam:
+            base_url = self.base_url_app
+        else:
+            base_url = self.base_url_pc
+
         endpoint = "/1/clouddrive/share/sharepage/save"
 
         params = {"pr": "ucpro", "fr": "pc", "uc_param_str": ""}
+
+        # Add mobile-specific parameters if using mobile API
+        if self.mparam:
+            params.update(
+                {
+                    "kps": self.mparam.get("kps"),
+                    "sign": self.mparam.get("sign"),
+                    "vcode": self.mparam.get("vcode"),
+                    "device_model": "M2011K2C",
+                    "fr": "android",
+                    "pf": "3300",
+                }
+            )
 
         payload = {
             "pwd_id": share_id,
@@ -95,7 +150,7 @@ class QuarkClient:
             "scene": "link",
         }
 
-        url = f"{self.base_url}{endpoint}?{urlencode(params)}"
+        url = f"{base_url}{endpoint}?{urlencode(params)}"
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -105,11 +160,13 @@ class QuarkClient:
                 data = response.json()
 
                 if data.get("code") == 0:
-                    logger.info(f"[QUARK] saved share_id={share_id}, task_id={data['data'].get('task_id')}")
+                    logger.info(
+                        f"[QUARK] saved share_id={share_id}, task_id={data['data'].get('task_id')}"
+                    )
                     return {
                         "success": True,
                         "task_id": data["data"].get("task_id"),
-                        "share_id": share_id
+                        "share_id": share_id,
                     }
                 else:
                     error_msg = data.get("message", "Unknown error")
@@ -118,23 +175,20 @@ class QuarkClient:
                     logger.error(f"[QUARK] failed for share_id={share_id}: {error_msg}")
 
                     is_cookie_expired = (
-                        error_code == 401 or
-                        error_code == 403 or
-                        "登录" in error_msg or
-                        "cookie" in error_msg.lower() or
-                        "token" in error_msg.lower() and "invalid" in error_msg.lower()
+                        error_code == 401
+                        or error_code == 403
+                        or "登录" in error_msg
+                        or "cookie" in error_msg.lower()
+                        or "token" in error_msg.lower()
+                        and "invalid" in error_msg.lower()
                     )
 
                     return {
                         "success": False,
                         "error": error_msg,
                         "share_id": share_id,
-                        "cookie_expired": is_cookie_expired
+                        "cookie_expired": is_cookie_expired,
                     }
-                else:
-                    error_msg = data.get("message", "Unknown error")
-                    logger.error(f"[QUARK] failed for share_id={share_id}: {error_msg}")
-                    return {"success": False, "error": error_msg, "share_id": share_id}
 
         except httpx.HTTPStatusError as e:
             logger.error(

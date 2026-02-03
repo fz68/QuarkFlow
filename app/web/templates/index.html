@@ -126,14 +126,6 @@
                 <span class="status-label">夸克 Cookie</span>
                 <span class="status-value not-configured" id="cookie-status">未配置</span>
             </div>
-            <div class="status-item">
-                <span class="status-label">BX-UA Token</span>
-                <span class="status-value not-configured" id="bx-ua-status">未配置</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">BX-UMIDToken</span>
-                <span class="status-value not-configured" id="bx-umidtoken-status">未配置</span>
-            </div>
         </div>
 
         <a href="/login" class="btn">配置夸克账号</a>
@@ -149,8 +141,6 @@
             .then(r => r.json())
             .then(data => {
                 updateStatus('cookie-status', data.quark_configured);
-                updateStatus('bx-ua-status', data.bx_ua_configured);
-                updateStatus('bx-umidtoken-status', data.bx_umidtoken_configured);
             });
 
         function updateStatus(id, configured) {
