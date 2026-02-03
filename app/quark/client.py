@@ -105,13 +105,31 @@ class QuarkClient:
                 data = response.json()
 
                 if data.get("code") == 0:
-                    logger.info(
-                        f"[QUARK] saved share_id={share_id}, task_id={data['data'].get('task_id')}"
-                    )
+                    logger.info(f"[QUARK] saved share_id={share_id}, task_id={data['data'].get('task_id')}")
                     return {
                         "success": True,
                         "task_id": data["data"].get("task_id"),
+                        "share_id": share_id
+                    }
+                else:
+                    error_msg = data.get("message", "Unknown error")
+                    error_code = data.get("code", -1)
+
+                    logger.error(f"[QUARK] failed for share_id={share_id}: {error_msg}")
+
+                    is_cookie_expired = (
+                        error_code == 401 or
+                        error_code == 403 or
+                        "登录" in error_msg or
+                        "cookie" in error_msg.lower() or
+                        "token" in error_msg.lower() and "invalid" in error_msg.lower()
+                    )
+
+                    return {
+                        "success": False,
+                        "error": error_msg,
                         "share_id": share_id,
+                        "cookie_expired": is_cookie_expired
                     }
                 else:
                     error_msg = data.get("message", "Unknown error")

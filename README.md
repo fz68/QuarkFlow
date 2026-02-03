@@ -16,6 +16,8 @@ QuarkFlow 是一个轻量级的自动化工具，实时监听 Telegram 频道中
 - 🐳 **Docker 部署** - 一键启动，支持 amd64/arm64
 - 📦 **轻量简洁** - ~150MB 镜像，专注核心功能
 - 🔄 **状态追踪** - SQLite 持久化，幂等性保证
+- 🔔 **智能告警** - Cookie 过期自动 Telegram 通知
+- 🌐 **WebUI 配置** - 可视化界面，无需手动编辑文件
 
 ## 🏗️ 架构
 
@@ -294,14 +296,44 @@ ping api.telegram.org
 sudo ufw status  # Ubuntu
 ```
 
-### 夸克转存失败
+### Cookie 过期自动通知
 
-**症状**：日志显示 `Cookie expired` 或 `403 Forbidden`
+当检测到 Cookie 过期时，系统会自动发送 Telegram 消息提醒：
 
-**解决**：
-1. 更新 `.env` 中的 `QUARK_COOKIE`
-2. 更新 `BX_UA` 和 `BX_UMIDTOKEN`
+```
+⚠️ QuarkFlow Cookie 已过期！
+
+错误信息：请先登录
+
+请立即更新：
+1. 访问 http://your-vps:8080/login
+2. 重新获取 Cookie
+3. 重启容器：docker compose restart
+
+Cookie 过期会导致转存失败。
+```
+
+**如何更新 Cookie：**
+
+**方式 1：WebUI（推荐）**
+1. 浏览器访问 `http://your-vps:8080/login`
+2. 按界面提示重新获取并填写 Cookie
 3. 重启容器：`docker compose restart`
+
+**方式 2：手动编辑**
+```bash
+# 1. SSH 到 VPS
+ssh user@your-vps
+
+# 2. 编辑 .env 文件
+cd QuarkFlow
+vim .env
+
+# 3. 更新 QUARK_COOKIE, BX_UA, BX_UMIDTOKEN
+
+# 4. 重启容器
+docker compose restart
+```
 
 ### stoken 获取失败
 

@@ -3,6 +3,7 @@ import logging
 from app.db import get_pending_tasks, mark_share_saved, mark_share_failed
 from app.config import WORKER_POLL_INTERVAL, WORKER_CONCURRENT_TASKS
 from app.quark.client import QuarkClient
+from app.utils.notifier import TelegramNotifier
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,8 @@ class QuarkWorker:
         self.semaphore = asyncio.Semaphore(WORKER_CONCURRENT_TASKS)
         self.running = False
         self.quark_client = QuarkClient(bx_ua=BX_UA, bx_umidtoken=BX_UMIDTOKEN)
+        self.notifier = TelegramNotifier()
+        self.cookie_expired_notified = False
 
     async def process_task(self, share_id: str):
         async with self.semaphore:
@@ -26,10 +29,29 @@ class QuarkWorker:
                     task_id = result.get("task_id", "")
                     logger.info(f"[WORKER] done, status=saved, task_id={task_id}")
                     mark_share_saved(share_id, task_id)
+
+                    if self.cookie_expired_notified:
+                        self.cookie_expired_notified = False
+                        logger.info("Cookie is working again, cleared expired flag")
+
                 else:
                     error = result.get("error", "Unknown error")
-                    logger.error(f"[WORKER] failed for share_id={share_id}: {error}")
-                    mark_share_failed(share_id, error)
+
+                    if result.get("cookie_expired"):
+                        logger.error(f"[WORKER] Cookie expired: {error}")
+
+                        if not self.cookie_expired_notified:
+                            await self.notifier.start()
+                            await self.notifier.send_cookie_expired_alert(error)
+                            await self.notifier.stop()
+                            self.cookie_expired_notified = True
+
+                        mark_share_failed(share_id, f"Cookie expired: {error}")
+                    else:
+                        logger.error(
+                            f"[WORKER] failed for share_id={share_id}: {error}"
+                        )
+                        mark_share_failed(share_id, error)
 
             except Exception as e:
                 logger.error(f"[WORKER] exception for share_id={share_id}: {e}")
