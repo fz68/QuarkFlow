@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuarkFlow - Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .status-value {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-value.configured {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-value.not-configured {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 16px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 QuarkFlow</h1>
+        <p class="subtitle">Telegram → 夸克网盘自动化</p>
+
+        <div class="status-card">
+            <div class="status-item">
+                <span class="status-label">夸克 Cookie</span>
+                <span class="status-value not-configured" id="cookie-status">未配置</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">BX-UA Token</span>
+                <span class="status-value not-configured" id="bx-ua-status">未配置</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">BX-UMIDToken</span>
+                <span class="status-value not-configured" id="bx-umidtoken-status">未配置</span>
+            </div>
+        </div>
+
+        <a href="/login" class="btn">配置夸克账号</a>
+
+        <div class="info-box">
+            <strong>💡 提示：</strong>配置完成后，需要重启 Docker 容器才能生效。<br>
+            <code>docker compose restart</code>
+        </div>
+    </div>
+
+    <script>
+        fetch('/api/status')
+            .then(r => r.json())
+            .then(data => {
+                updateStatus('cookie-status', data.quark_configured);
+                updateStatus('bx-ua-status', data.bx_ua_configured);
+                updateStatus('bx-umidtoken-status', data.bx_umidtoken_configured);
+            });
+
+        function updateStatus(id, configured) {
+            const el = document.getElementById(id);
+            if (configured) {
+                el.textContent = '已配置';
+                el.className = 'status-value configured';
+            } else {
+                el.textContent = '未配置';
+                el.className = 'status-value not-configured';
+            }
+        }
+    </script>
+</body>
+</html>

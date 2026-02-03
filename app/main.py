@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import threading
 from app.telegram.listener import TelegramListener
 from app.tasks.worker import QuarkWorker
 from app.db import init_db
+from app.web.app import run_web_server
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -16,6 +18,12 @@ async def main():
 
     init_db()
     logger.info("Database initialized")
+
+    web_thread = threading.Thread(
+        target=run_web_server, kwargs={"host": "0.0.0.0", "port": 8080}, daemon=True
+    )
+    web_thread.start()
+    logger.info("WebUI started on http://0.0.0.0:8080")
 
     listener = TelegramListener()
     worker = QuarkWorker()
