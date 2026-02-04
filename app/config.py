@@ -27,7 +27,8 @@ TG_CHANNEL = os.getenv("TG_CHANNEL", "@D_wusun")
 TG_SESSION_NAME = os.getenv("TG_SESSION", "quarkflow")
 
 # Quark configuration
-QUARK_COOKIE = os.getenv("QUARK_COOKIE", "")
+_raw_cookie = os.getenv("QUARK_COOKIE", "")
+QUARK_COOKIE = "".join(c for c in _raw_cookie if ord(c) < 128)
 
 # Database
 DB_PATH = DATA_DIR / "quarkflow.db"

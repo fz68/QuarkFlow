@@ -8,9 +8,12 @@ from urllib.parse import urlencode
 from app.config import QUARK_COOKIE
 
 logger = logging.getLogger(__name__)
-httpx_logger = logging.getLogger("httpx")
-httpx_logger.setLevel(logging.WARNING)
-httpx_logger.propagate = False
+
+# 完全禁用 httpx 日志以避免编码错误
+logging.getLogger("httpx").setLevel(logging.CRITICAL)
+logging.getLogger("httpx").propagate = False
+logging.getLogger("httpcore").setLevel(logging.CRITICAL)
+logging.getLogger("httpcore").propagate = False
 
 
 class QuarkClient:
