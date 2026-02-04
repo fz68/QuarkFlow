@@ -102,7 +102,15 @@ class QuarkClient:
         url = f"{base_url}{endpoint}"
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            import warnings
+
+            warnings.filterwarnings("ignore", category=Warning)
+
+            event_hooks = {"request": [], "response": []}
+
+            async with httpx.AsyncClient(
+                timeout=30.0, event_hooks=event_hooks
+            ) as client:
                 response = await client.post(
                     url, params=params, headers=self.headers, json=payload
                 )
