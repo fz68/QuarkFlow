@@ -131,8 +131,11 @@ class QuarkClient:
                     return ""
 
         except Exception as e:
-            error_msg = str(e).encode("utf-8", errors="ignore").decode("utf-8")
-            logger.error(f"[QUARK] exception getting stoken: {error_msg}")
+            import traceback
+
+            logger.error("[QUARK] exception getting stoken")
+            logger.error(f"[QUARK] error type: {type(e).__name__}")
+            # 不记录异常详情，避免编码错误
             return ""
 
     async def save_share(self, share_id: str, to_pdir_fid: str = "0") -> dict:
@@ -230,8 +233,12 @@ class QuarkClient:
                 "share_id": share_id,
             }
         except Exception as e:
-            logger.error(f"[QUARK] exception for share_id={share_id}: {str(e)}")
-            return {"success": False, "error": str(e), "share_id": share_id}
+            logger.error(f"[QUARK] exception for share_id={share_id}")
+            return {
+                "success": False,
+                "error": "HTTP request failed",
+                "share_id": share_id,
+            }
 
     async def get_file_list(self, pdir_fid: str = "0") -> dict:
         endpoint = "/1/clouddrive/file/sort"
@@ -267,8 +274,8 @@ class QuarkClient:
                     }
 
         except Exception as e:
-            logger.error(f"[QUARK] exception getting file list: {str(e)}")
-            return {"success": False, "error": str(e)}
+            logger.error("[QUARK] exception getting file list")
+            return {"success": False, "error": "HTTP request failed"}
 
     async def find_folder_by_name(self, folder_name: str, pdir_fid: str = "0") -> str:
         result = await self.get_file_list(pdir_fid)
