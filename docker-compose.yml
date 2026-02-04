@@ -1,15 +1,12 @@
 services:
   quarkflow:
     build: .
-    container_name: quarkflow
     restart: unless-stopped
-    ports:
-      - "8080:8080"  # WebUI port
-    volumes:
-      - ./data:/data
-      - ./.env:/app/.env
     env_file:
       - .env
+    environment:
+      - LANG=en_US.UTF-8
+      - LC_ALL=en_US.UTF-8
     deploy:
       resources:
         limits:
