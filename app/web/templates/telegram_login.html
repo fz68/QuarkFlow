@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置 Telegram 账号 - QuarkFlow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .back-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .form-container {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #0077b3;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #5568d3;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-link">← 返回首页</a>
+            <h1>配置 Telegram 账号</h1>
+        </div>
+
+        <div class="form-container">
+            <div class="alert" id="alert"></div>
+
+            <div class="step active" id="step-phone">
+                <div class="info-box">
+                    请输入您的 Telegram 手机号码（国际格式，如：+8613800138000）
+                </div>
+                <div class="form-group">
+                    <label class="form-label">手机号码</label>
+                    <input type="tel" class="form-input" id="phone" placeholder="+8613800138000">
+                </div>
+                <button class="btn" onclick="sendCode()" id="send-code-btn">
+                    发送验证码
+                </button>
+            </div>
+
+            <div class="step" id="step-code">
+                <div class="info-box">
+                    验证码已发送到您的 Telegram 应用，请查收并输入。
+                </div>
+                <div class="form-group">
+                    <label class="form-label">验证码</label>
+                    <input type="text" class="form-input" id="code" placeholder="12345" maxlength="10">
+                </div>
+                <button class="btn" onclick="signIn()" id="sign-in-btn">
+                    登录
+                </button>
+                <button class="btn btn-secondary" onclick="resetForm()" style="margin-top: 10px;">
+                    返回重新输入手机号
+                </button>
+            </div>
+
+            <div class="step" id="step-password">
+                <div class="info-box">
+                    您的账号启用了两步验证，请输入云密码。
+                </div>
+                <div class="form-group">
+                    <label class="form-label">云密码</label>
+                    <input type="password" class="form-input" id="password" placeholder="请输入两步验证密码">
+                </div>
+                <button class="btn" onclick="submitPassword()" id="password-btn">
+                    验证密码
+                </button>
+            </div>
+
+            <div class="step" id="step-success">
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 60px; margin-bottom: 20px;">✅</div>
+                    <h2 style="color: #333; margin-bottom: 10px;">登录成功！</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Telegram 账号已配置完成</p>
+                    <button class="btn" onclick="window.location.href='/'">
+                        返回首页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let phoneHash = '';
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = 'alert ' + type + ' show';
+            setTimeout(() => {
+                alert.className = 'alert ' + type;
+            }, 5000);
+        }
+
+        function showStep(stepId) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById(stepId).classList.add('active');
+            document.getElementById('alert').className = 'alert';
+        }
+
+        function setLoading(btnId, loading, text) {
+            const btn = document.getElementById(btnId);
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = text + ' <span class="spinner"></span>';
+            } else {
+                btn.disabled = false;
+                btn.textContent = text;
+            }
+        }
+
+        async function sendCode() {
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!phone) {
+                showAlert('请输入手机号码', 'error');
+                return;
+            }
+
+            if (!phone.match(/^\+\d{10,15}$/)) {
+                showAlert('手机号码格式不正确，应为国际格式（如：+8613800138000）', 'error');
+                return;
+            }
+
+            setLoading('send-code-btn', true, '发送中');
+
+            try {
+                const res = await fetch('/api/telegram/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    phoneHash = data.phone_hash;
+                    showAlert('验证码已发送', 'success');
+                    showStep('step-code');
+                } else {
+                    showAlert('❌ ' + data.error, 'error');
+                }
+            } catch (err) {
+                showAlert('❌ 发送失败：' + err.message, 'error');
+            } finally {
+                setLoading('send-code-btn', false, '发送验证码');
+            }
+        }
+
+        async function signIn() {
+            const code = document.getElementById('code').value.trim();
+
+            if (!code) {
+                showAlert('请输入验证码', 'error');
+                return;
+            }
+
+            setLoading('sign-in-btn', true, '登录中');
+
+            try {
+                const res = await fetch('/api/telegram/sign-in', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_hash: phoneHash, code })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    if (data.requires_password) {
+                        showStep('step-password');
+                    } else {
+                        showStep('step-success');
+                    }
+                } else {
+                    showAlert('❌ ' + data.error, 'error');
+                }
+            } catch (err) {
+                showAlert('❌ 登录失败：' + err.message, 'error');
+            } finally {
+                setLoading('sign-in-btn', false, '登录');
+            }
+        }
+
+        async function submitPassword() {
+            const password = document.getElementById('password').value;
+
+            if (!password) {
+                showAlert('请输入密码', 'error');
+                return;
+            }
+
+            setLoading('password-btn', true, '验证中');
+
+            try {
+                const res = await fetch('/api/telegram/sign-in', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone_hash: phoneHash,
+                        code: document.getElementById('code').value,
+                        password: password
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showStep('step-success');
+                } else {
+                    showAlert('❌ ' + data.error, 'error');
+                }
+            } catch (err) {
+                showAlert('❌ 验证失败：' + err.message, 'error');
+            } finally {
+                setLoading('password-btn', false, '验证密码');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('phone').value = '';
+            document.getElementById('code').value = '';
+            document.getElementById('password').value = '';
+            phoneHash = '';
+            showStep('step-phone');
+        }
+    </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from app.db import get_pending_tasks, mark_share_saved, mark_share_failed
-from app.config import WORKER_POLL_INTERVAL, WORKER_CONCURRENT_TASKS
+from app.config import WORKER_POLL_INTERVAL, WORKER_CONCURRENT_TASKS, TARGET_FOLDER_NAME
 from app.quark.client import QuarkClient
 from app.utils.notifier import TelegramNotifier
 
@@ -15,13 +15,32 @@ class QuarkWorker:
         self.quark_client = QuarkClient()
         self.notifier = TelegramNotifier()
         self.cookie_expired_notified = False
+        self.target_folder_fid = None
+
+    async def initialize(self):
+        if TARGET_FOLDER_NAME:
+            logger.info(f"[WORKER] Looking for target folder: {TARGET_FOLDER_NAME}")
+            fid = await self.quark_client.find_folder_by_name(TARGET_FOLDER_NAME)
+            if fid:
+                self.target_folder_fid = fid
+                logger.info(
+                    f"[WORKER] Found target folder {TARGET_FOLDER_NAME} (fid={fid})"
+                )
+            else:
+                logger.warning(
+                    f"[WORKER] Target folder '{TARGET_FOLDER_NAME}' not found in Quark. "
+                    f"Files will be saved to root directory. "
+                    f"Please create the folder manually in Quark web UI."
+                )
 
     async def process_task(self, share_id: str):
         async with self.semaphore:
             logger.info(f"[WORKER] processing share_id={share_id}")
 
             try:
-                result = await self.quark_client.save_share(share_id=share_id)
+                result = await self.quark_client.save_share(
+                    share_id=share_id, to_pdir_fid=self.target_folder_fid or "0"
+                )
 
                 if result["success"]:
                     task_id = result.get("task_id", "")
@@ -57,10 +76,13 @@ class QuarkWorker:
 
     async def run(self):
         self.running = True
+        await self.initialize()
         logger.info(f"Worker started (polling every {WORKER_POLL_INTERVAL}s)")
 
         while self.running:
             try:
+                self.quark_client.reload_cookie()
+
                 tasks = get_pending_tasks(limit=10)
 
                 if tasks:

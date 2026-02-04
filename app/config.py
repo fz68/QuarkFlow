@@ -28,5 +28,5 @@ DB_PATH = DATA_DIR / "quarkflow.db"
 WORKER_POLL_INTERVAL = int(os.getenv("WORKER_POLL_INTERVAL", "10"))  # seconds
 WORKER_CONCURRENT_TASKS = int(os.getenv("WORKER_CONCURRENT_TASKS", "1"))
 
-# Optional: Target folder for organizing saved files
-TARGET_FOLDER_ID = os.getenv("TARGET_FOLDER_ID", "")
+# Optional: Target folder name for organizing saved files
+TARGET_FOLDER_NAME = os.getenv("TARGET_FOLDER_NAME", "")

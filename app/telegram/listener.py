@@ -1,11 +1,12 @@
 """Telegram listener for QuarkFlow."""
 
+import asyncio
 import logging
 import re
 from telethon import TelegramClient, events
 from telethon.errors import SessionPasswordNeededError
 
-from app.config import TG_API_ID, TG_API_HASH, TG_CHANNEL, TG_SESSION_NAME
+from app.config import TG_API_ID, TG_API_HASH, TG_CHANNEL, TG_SESSION_NAME, DATA_DIR
 from app.db import insert_tg_message, insert_share_pending
 
 logger = logging.getLogger(__name__)
@@ -22,11 +23,29 @@ def extract_quark_links(text: str) -> list[str]:
 
 class TelegramListener:
     def __init__(self):
-        self.client = TelegramClient(f"data/{TG_SESSION_NAME}", TG_API_ID, TG_API_HASH)
+        self.client = None
+
+    def _create_client(self):
+        session_path = DATA_DIR / TG_SESSION_NAME
+        return TelegramClient(str(session_path), TG_API_ID, TG_API_HASH)
 
     async def start(self):
-        await self.client.start()
-        logger.info(f"Logged in as {await self.client.get_me()}")
+        self.client = self._create_client()
+        await self.client.connect()
+
+        while not await self.client.is_user_authorized():
+            logger.warning(
+                "Telegram session not authorized. "
+                "Please login via WebUI: http://localhost:8080/telegram/login"
+            )
+            logger.info("Will retry authorization check in 30 seconds...")
+            await asyncio.sleep(30)
+            await self.client.disconnect()
+            self.client = self._create_client()
+            await self.client.connect()
+
+        me = await self.client.get_me()
+        logger.info(f"Logged in as {me.first_name} (@{me.username or 'no username'})")
 
     async def on_new_message(self, event):
         message = event.message

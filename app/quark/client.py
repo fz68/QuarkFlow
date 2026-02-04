@@ -28,6 +28,17 @@ class QuarkClient:
             "Cookie": self.cookie,
         }
 
+    def reload_cookie(self):
+        """Reload cookie from config and update headers."""
+        from app.config import QUARK_COOKIE
+
+        if QUARK_COOKIE != self.cookie:
+            logger.info("[QUARK] Cookie changed, reloading...")
+            self.cookie = QUARK_COOKIE
+            self.mparam = self._extract_mparam_from_cookie()
+            self.headers["Cookie"] = self.cookie
+            logger.info("[QUARK] Cookie reloaded successfully")
+
     def _extract_mparam_from_cookie(self) -> dict:
         """Extract kps, sign, vcode from Quark cookie."""
         mparam = {}
@@ -202,3 +213,48 @@ class QuarkClient:
         except Exception as e:
             logger.error(f"[QUARK] exception for share_id={share_id}: {str(e)}")
             return {"success": False, "error": str(e), "share_id": share_id}
+
+    async def get_file_list(self, pdir_fid: str = "0") -> dict:
+        endpoint = "/1/clouddrive/file/sort"
+        params = {
+            "pr": "ucpro",
+            "fr": "pc",
+            "uc_param_str": "",
+            "pdir_fid": pdir_fid,
+            "_page": "1",
+            "_size": "100",
+            "__dt": "300",
+            "__t": str(int(__import__("time").time() * 1000)),
+        }
+
+        url = f"{self.base_url_pc}{endpoint}"
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url, params=params, headers=self.headers)
+                response.raise_for_status()
+                data = response.json()
+
+                if data.get("status") == 200 and data.get("data", {}).get("list"):
+                    return {"success": True, "files": data["data"]["list"]}
+                else:
+                    return {
+                        "success": False,
+                        "error": data.get("message", "Unknown error"),
+                    }
+
+        except Exception as e:
+            logger.error(f"[QUARK] exception getting file list: {str(e)}")
+            return {"success": False, "error": str(e)}
+
+    async def find_folder_by_name(self, folder_name: str, pdir_fid: str = "0") -> str:
+        result = await self.get_file_list(pdir_fid)
+
+        if not result.get("success"):
+            return ""
+
+        for file in result.get("files", []):
+            if file.get("file_name") == folder_name and file.get("dir") == True:
+                return file.get("fid")
+
+        return ""
