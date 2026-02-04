@@ -12,8 +12,16 @@ BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
+
 # Telegram configuration
-TG_API_ID = int(os.getenv("TG_API_ID", "0"))
+def _safe_int(value: str, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
+TG_API_ID = _safe_int(os.getenv("TG_API_ID", "0"))
 TG_API_HASH = os.getenv("TG_API_HASH", "")
 TG_CHANNEL = os.getenv("TG_CHANNEL", "@D_wusun")
 TG_SESSION_NAME = os.getenv("TG_SESSION", "quarkflow")
