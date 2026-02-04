@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import sys
 import threading
 from app.telegram.listener import TelegramListener
 from app.tasks.worker import QuarkWorker
@@ -7,8 +8,13 @@ from app.db import init_db
 from app.web.app import run_web_server
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+    force=True,
 )
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
