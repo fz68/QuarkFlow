@@ -116,7 +116,11 @@ class QuarkClient:
                 )
                 response.raise_for_status()
 
-                data = response.json()
+                # 手动解码避免 ASCII 编码错误
+                import json
+
+                text = response.content.decode("utf-8", errors="ignore")
+                data = json.loads(text)
 
                 if data.get("status") == 200 and data.get("data", {}).get("stoken"):
                     stoken = data["data"]["stoken"]
@@ -180,7 +184,10 @@ class QuarkClient:
                 response = await client.post(url, headers=self.headers, json=payload)
                 response.raise_for_status()
 
-                data = response.json()
+                import json
+
+                text = response.content.decode("utf-8", errors="ignore")
+                data = json.loads(text)
 
                 if data.get("code") == 0:
                     logger.info(
@@ -245,7 +252,11 @@ class QuarkClient:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(url, params=params, headers=self.headers)
                 response.raise_for_status()
-                data = response.json()
+
+                import json
+
+                text = response.content.decode("utf-8", errors="ignore")
+                data = json.loads(text)
 
                 if data.get("status") == 200 and data.get("data", {}).get("list"):
                     return {"success": True, "files": data["data"]["list"]}
