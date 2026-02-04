@@ -8,6 +8,9 @@ from urllib.parse import urlencode
 from app.config import QUARK_COOKIE
 
 logger = logging.getLogger(__name__)
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.setLevel(logging.WARNING)
+httpx_logger.propagate = False
 
 
 class QuarkClient:
@@ -116,7 +119,8 @@ class QuarkClient:
                     return ""
 
         except Exception as e:
-            logger.error(f"[QUARK] exception getting stoken: {str(e)}")
+            error_msg = str(e).encode("utf-8", errors="ignore").decode("utf-8")
+            logger.error(f"[QUARK] exception getting stoken: {error_msg}")
             return ""
 
     async def save_share(self, share_id: str, to_pdir_fid: str = "0") -> dict:
